@@ -24,6 +24,8 @@ from core.ffmpeg_handler import EXPORT_PRESETS, ExportWorker, find_ffmpeg, secon
 from core.subtitles import ExportWithSubtitlesWorker
 from ui.waveform_widget import WaveformWidget
 from ui.subtitles_panel import SubtitlesOptions
+from ui.highlights_panel import HighlightsPanel
+from core.highlight_detector import HighlightDetector
 from ui.theme import DARK_THEME
 
 
@@ -151,37 +153,30 @@ class MainWindow(QMainWindow):
         sep = QFrame(); sep.setFrameShape(QFrame.HLine)
         layout.addWidget(sep)
 
-        btn_load = QPushButton("＋  Cargar Video")
+        # Botón cargar
+        btn_load = QPushButton("＋  Agregar Video")
         btn_load.setObjectName("btn_load")
         btn_load.clicked.connect(self._load_video)
-        btn_load.setToolTip("Abrir archivo de video (Ctrl+O)")
+        btn_load.setToolTip("Agregar video a la lista (Ctrl+O)")
         layout.addWidget(btn_load)
 
-        # Tarjeta del archivo cargado
-        self._media_card = QWidget()
-        self._media_card.setObjectName("media_card")
-        self._media_card.setVisible(False)
-        card_layout = QVBoxLayout(self._media_card)
-        card_layout.setContentsMargins(6, 6, 6, 6)
-        card_layout.setSpacing(3)
+        # Lista de videos cargados
+        self._media_list = QListWidget()
+        self._media_list.setSpacing(2)
+        self._media_list.setToolTip("Doble clic para abrir el video")
+        self._media_list.itemDoubleClicked.connect(self._on_media_double_clicked)
+        self._media_list.currentRowChanged.connect(self._on_media_selected)
+        layout.addWidget(self._media_list, stretch=1)
 
-        self._media_thumb = QLabel()
-        self._media_thumb.setFixedHeight(90)
-        self._media_thumb.setAlignment(Qt.AlignCenter)
-        self._media_thumb.setStyleSheet("background:#0a0a0a; border-radius:4px;")
-        card_layout.addWidget(self._media_thumb)
+        # Botón quitar video
+        self._btn_remove_media = QPushButton("✕  Quitar Video")
+        self._btn_remove_media.setObjectName("btn_delete_clip")
+        self._btn_remove_media.setEnabled(False)
+        self._btn_remove_media.clicked.connect(self._remove_media)
+        layout.addWidget(self._btn_remove_media)
 
-        self._media_name_lbl = QLabel()
-        self._media_name_lbl.setObjectName("media_name")
-        self._media_name_lbl.setWordWrap(True)
-        card_layout.addWidget(self._media_name_lbl)
-
-        self._media_dur_lbl = QLabel()
-        self._media_dur_lbl.setObjectName("media_duration")
-        card_layout.addWidget(self._media_dur_lbl)
-
-        layout.addWidget(self._media_card)
-        layout.addStretch()
+        # Lista interna de rutas
+        self._media_files = []   # lista de rutas absolutas
 
         return panel
 
@@ -292,6 +287,16 @@ class MainWindow(QMainWindow):
         self._btn_delete.setEnabled(False)
         self._btn_delete.clicked.connect(self._delete_clip)
         layout.addWidget(self._btn_delete)
+
+        # ── Panel de highlights ──
+        sep = QFrame(); sep.setFrameShape(QFrame.HLine)
+        sep.setStyleSheet("color: #222222;")
+        layout.addWidget(sep)
+
+        self._highlights_panel = HighlightsPanel()
+        self._highlights_panel.highlight_seek.connect(self._on_highlight_seek)
+        self._highlights_panel.highlight_add.connect(self._on_highlight_add)
+        layout.addWidget(self._highlights_panel, stretch=1)
 
         return panel
 
@@ -417,14 +422,61 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def _load_video(self):
-        file, _ = QFileDialog.getOpenFileName(
-            self, "Seleccionar Video",
+        files, _ = QFileDialog.getOpenFileNames(
+            self, "Agregar Videos",
             os.path.expanduser("~"),
             "Videos (*.mp4 *.avi *.mkv *.mov *.flv *.webm)"
         )
-        if not file:
+        if not files:
             return
 
+        for file in files:
+            if file not in self._media_files:
+                self._media_files.append(file)
+                name = os.path.basename(file)
+                self._media_list.addItem(f"  {name}")
+
+        self._btn_remove_media.setEnabled(True)
+
+        # Si no hay video activo, abrir el primero
+        if not self._source_path:
+            self._media_list.setCurrentRow(0)
+            self._open_media(self._media_files[0])
+
+    def _on_media_double_clicked(self, item):
+        row = self._media_list.row(item)
+        if 0 <= row < len(self._media_files):
+            self._open_media(self._media_files[row])
+
+    def _on_media_selected(self, row):
+        self._btn_remove_media.setEnabled(row >= 0)
+
+    def _remove_media(self):
+        row = self._media_list.currentRow()
+        if row < 0:
+            return
+        file = self._media_files[row]
+        self._media_list.takeItem(row)
+        self._media_files.pop(row)
+
+        # Si era el video activo, detener reproducción
+        if file == self._source_path:
+            self._player.stop()
+            self._source_path = ""
+            self._is_playing  = False
+            self._btn_play.setText("▶")
+            self._overlay_label.show()
+            self._slider.setValue(0)
+            self._waveform.set_total_frames(0)
+            self._timecode_lbl.setText("00:00:00 / 00:00:00")
+            self.setWindowTitle("StreamerClipsAI")
+            self._btn_export_top.setEnabled(False)
+            self._status.showMessage("Video eliminado de la lista")
+
+        self._btn_remove_media.setEnabled(len(self._media_files) > 0)
+
+    def _open_media(self, file: str):
+        """Abre y reproduce un video de la lista."""
         self._player.stop()
         self._is_playing = False
         self._btn_play.setText("▶")
@@ -434,9 +486,9 @@ class MainWindow(QMainWindow):
         if not self._player.load(file):
             return
 
-        self._source_path   = file
-        self._fps           = self._player.fps
-        self._total_frames  = self._player.total_frames
+        self._source_path  = file
+        self._fps          = self._player.fps
+        self._total_frames = self._player.total_frames
         dur = self._player.duration_seconds
 
         self._slider.setMaximum(self._total_frames)
@@ -449,11 +501,6 @@ class MainWindow(QMainWindow):
         name = os.path.basename(file)
         self.setWindowTitle(f"StreamerClipsAI  ·  {name}")
         self._timecode_lbl.setText(f"00:00:00 / {secs_to_tc(dur)}")
-
-        # Actualizar tarjeta de medios
-        self._media_name_lbl.setText(name)
-        self._media_dur_lbl.setText(secs_to_tc(dur))
-        self._media_card.setVisible(True)
         self._overlay_label.hide()
 
         self._status.showMessage(
@@ -689,6 +736,39 @@ class MainWindow(QMainWindow):
         self._status.showMessage(
             "⚠ VLC no encontrado — instala VLC 64-bit desde https://www.videolan.org"
         )
+
+    # ══════════════════════════════════════════════════════════════════
+    # HIGHLIGHTS
+    # ══════════════════════════════════════════════════════════════════
+
+    @pyqtSlot(float)
+    def _on_highlight_seek(self, seconds: float):
+        """Ir al segundo del highlight en el video."""
+        fps = self._fps or 30
+        frame = int(seconds * fps)
+        self._player.seek(frame)
+        self._slider.setValue(frame)
+
+    @pyqtSlot(object)
+    def _on_highlight_add(self, highlight):
+        """Agregar highlight como clip a la lista."""
+        from core.clip_model import Clip
+        fps = self._fps or 30
+        clip = Clip(
+            source_path  = self._source_path,
+            in_frame     = int(highlight.start_sec * fps),
+            out_frame    = int(highlight.end_sec   * fps),
+            fps          = fps,
+            label        = highlight.label(),
+            export_preset= self._combo_format.currentText(),
+        )
+        self._clips.append(clip)
+        item = QListWidgetItem(f"  {clip.display_name()}\n  ⏱ {clip.duration_str}")
+        item.setData(Qt.UserRole, clip.id)
+        self._clips_list.addItem(item)
+        self._clips_list.setCurrentItem(item)
+        self._btn_delete.setEnabled(True)
+        self._status.showMessage(f"✓ Highlight agregado: {clip.display_name()}")
 
     # ══════════════════════════════════════════════════════════════════
     # CIERRE
