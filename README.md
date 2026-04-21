@@ -1,0 +1,95 @@
+# StreamerClipsAI
+
+Aplicación de escritorio para streamers que permite cargar grabaciones, marcar puntos de entrada/salida y exportar clips verticales para TikTok, YouTube Shorts, Instagram Reels y Kick.
+
+---
+
+## Requisitos
+
+- Python 3.9+
+- FFmpeg instalado y disponible en el PATH
+
+## Instalación
+
+```bash
+pip install -r requirements.txt
+```
+
+### Instalar FFmpeg en Windows
+
+1. Descarga desde https://ffmpeg.org/download.html
+2. Extrae en `C:\ffmpeg\`
+3. Agrega `C:\ffmpeg\bin` a la variable de entorno PATH de Windows
+4. Verifica: abre una terminal y ejecuta `ffmpeg -version`
+
+## Ejecutar
+
+```bash
+python main.py
+```
+
+---
+
+## Cómo usar la aplicación
+
+### Cargar un video
+- Haz clic en **⊕ Cargar Video** en la barra lateral (o presiona `Ctrl+O`)
+- Formatos soportados: `.mp4`, `.avi`, `.mkv`, `.mov`, `.flv`, `.webm`
+
+### Controles de reproducción
+| Tecla | Acción |
+|-------|--------|
+| `Espacio` | Reproducir / Pausar |
+| `←` | Retroceder 10 segundos |
+| `→` | Avanzar 10 segundos |
+| `Ctrl+O` | Abrir video |
+
+### Crear un clip
+1. Reproduce el video y encuentra tu momento destacado
+2. Presiona **I** (o haz clic en `[ ENTRADA`) para marcar el inicio
+3. Navega hasta el final del momento
+4. Presiona **O** (o haz clic en `SALIDA ]`) para marcar el fin
+5. Opcionalmente asigna un nombre al clip
+6. Elige el formato de exportación (TikTok, Shorts, etc.)
+7. Haz clic en **＋ Agregar a la Lista** para guardarlo, o **⬆ Exportar Ahora** para exportar directamente
+
+### Formatos de exportación
+| Formato | Resolución | Ideal para |
+|---------|-----------|------------|
+| TikTok / Shorts (9:16) | 1080×1920 | TikTok |
+| YouTube Shorts (9:16) | 1080×1920 | YouTube Shorts |
+| Instagram Reels (9:16) | 1080×1920 | Instagram |
+| Kick Clip (16:9) | 1280×720 | Kick |
+| Calidad Original (16:9) | Original | Archivo |
+| Vista previa GIF | 480px ancho | Miniaturas |
+
+---
+
+## Estructura del proyecto
+
+```
+StreamerClipsAI/
+├── main.py                        # Punto de entrada
+├── requirements.txt
+├── core/
+│   ├── video_player.py            # Reproducción de video con OpenCV en hilo separado
+│   ├── ffmpeg_handler.py          # Exportación de clips con FFmpeg y presets
+│   └── clip_model.py              # Modelo de datos de un clip
+└── ui/
+    ├── main_window.py             # Ventana principal de la aplicación
+    ├── theme.py                   # Hoja de estilos oscura
+    ├── waveform_widget.py         # Widget de línea de tiempo / forma de onda
+    ├── clips_panel.py             # Panel lateral con lista de clips
+    └── clip_creator_panel.py      # Panel de puntos entrada/salida y exportación
+```
+
+---
+
+## Hoja de ruta
+
+- [ ] Extracción de forma de onda de audio (librosa)
+- [ ] Detección automática de momentos destacados (picos de audio)
+- [ ] Detección de escenas con IA
+- [ ] Exportación de clips en lote
+- [ ] Importación de actividad del chat (metadatos de VOD de Twitch/Kick)
+- [ ] Recorte vertical automático (seguimiento de cara)
