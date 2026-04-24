@@ -128,9 +128,12 @@ QMainWindow, QWidget {
 }
 
 #overlay_text {
-    color: #333333;
-    font-size: 14px;
-    font-weight: 500;
+    color: #666666;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.6;
+    background: transparent;
+    padding: 20px;
 }
 
 /* Controles de reproducción centrados */

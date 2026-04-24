@@ -1,14 +1,6 @@
 """
 ui/main_window.py
 StreamerClipsAI — Interfaz estilo CapCut
-<<<<<<< HEAD
-=======
-  - Topbar con título y botón Exportar
-  - Panel izquierdo: medios cargados
-  - Centro: video grande
-  - Panel derecho: lista de clips
-  - Timeline inferior: slider + botones IN/OUT + crear clip
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
 """
 import os
 from PyQt5.QtWidgets import (
@@ -28,10 +20,8 @@ from core.subtitles import ExportWithSubtitlesWorker
 from ui.waveform_widget import WaveformWidget
 from ui.subtitles_panel import SubtitlesOptions
 from ui.highlights_panel import HighlightsPanel
-<<<<<<< HEAD
 from ui.history_panel import HistoryPanel
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
+from ui.profile_widget import ProfileWidget
 from core.highlight_detector import HighlightDetector
 from ui.theme import DARK_THEME
 
@@ -45,20 +35,13 @@ def secs_to_tc(secs: float) -> str:
 
 class MainWindow(QMainWindow):
 
-<<<<<<< HEAD
     def __init__(self, auth_manager=None):
-=======
-    def __init__(self):
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         super().__init__()
         self.setWindowTitle("StreamerClipsAI")
         self.resize(1380, 820)
         self.setMinimumSize(1000, 650)
         self.setStyleSheet(DARK_THEME)
-<<<<<<< HEAD
         self.auth = auth_manager
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
 
         # Estado
         self._source_path    = ""
@@ -72,10 +55,7 @@ class MainWindow(QMainWindow):
         self._ffmpeg_path    = None
         self._export_worker  = None
         self._clips          = []
-<<<<<<< HEAD
         self._detector       = None   # HighlightDetector activo
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
 
         # Player
         self._player = VideoPlayer(self)
@@ -110,15 +90,8 @@ class MainWindow(QMainWindow):
         main.setContentsMargins(0, 0, 0, 0)
         main.setSpacing(0)
 
-<<<<<<< HEAD
         main.addWidget(self._build_topbar())
 
-=======
-        # 1) Topbar
-        main.addWidget(self._build_topbar())
-
-        # 2) Fila central (izquierda + video + derecha)
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         center_row = QWidget()
         center_layout = QHBoxLayout(center_row)
         center_layout.setContentsMargins(0, 0, 0, 0)
@@ -129,11 +102,6 @@ class MainWindow(QMainWindow):
         center_layout.addWidget(self._build_right_panel())
 
         main.addWidget(center_row, stretch=1)
-<<<<<<< HEAD
-=======
-
-        # 3) Timeline inferior
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         main.addWidget(self._build_timeline())
 
     # ── Topbar ────────────────────────────────────────────────────────
@@ -145,10 +113,6 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(16, 0, 16, 0)
         layout.setSpacing(12)
 
-<<<<<<< HEAD
-=======
-        # Logo
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         title = QLabel("StreamerClips")
         title.setObjectName("app_title")
         sub = QLabel("AI")
@@ -158,25 +122,11 @@ class MainWindow(QMainWindow):
 
         layout.addStretch()
 
-<<<<<<< HEAD
-        # Usuario logueado
-        self._user_label = QLabel("")
-        self._user_label.setStyleSheet("color:#555566; font-size:12px; font-weight:600;")
-        layout.addWidget(self._user_label)
+        # Widget de perfil interactivo
+        self._profile_widget = ProfileWidget()
+        self._profile_widget.logout_requested.connect(self._do_logout)
+        layout.addWidget(self._profile_widget)
 
-        self._btn_logout = QPushButton("Cerrar sesión")
-        self._btn_logout.setStyleSheet("""
-            QPushButton { background:transparent; color:#44445a; border:1px solid #222233;
-                border-radius:6px; padding:5px 12px; font-size:11px; }
-            QPushButton:hover { color:#ffffff; border-color:#555566; }
-        """)
-        self._btn_logout.hide()
-        self._btn_logout.clicked.connect(self._do_logout)
-        layout.addWidget(self._btn_logout)
-
-=======
-        # Botón exportar topbar
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._btn_export_top = QPushButton("⬆  Exportar Clip")
         self._btn_export_top.setObjectName("btn_export_main")
         self._btn_export_top.setEnabled(False)
@@ -201,20 +151,12 @@ class MainWindow(QMainWindow):
         sep = QFrame(); sep.setFrameShape(QFrame.HLine)
         layout.addWidget(sep)
 
-<<<<<<< HEAD
-=======
-        # Botón cargar
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         btn_load = QPushButton("＋  Agregar Video")
         btn_load.setObjectName("btn_load")
         btn_load.clicked.connect(self._load_video)
         btn_load.setToolTip("Agregar video a la lista (Ctrl+O)")
         layout.addWidget(btn_load)
 
-<<<<<<< HEAD
-=======
-        # Lista de videos cargados
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._media_list = QListWidget()
         self._media_list.setSpacing(2)
         self._media_list.setToolTip("Doble clic para abrir el video")
@@ -222,30 +164,17 @@ class MainWindow(QMainWindow):
         self._media_list.currentRowChanged.connect(self._on_media_selected)
         layout.addWidget(self._media_list, stretch=1)
 
-<<<<<<< HEAD
-=======
-        # Botón quitar video
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._btn_remove_media = QPushButton("✕  Quitar Video")
         self._btn_remove_media.setObjectName("btn_delete_clip")
         self._btn_remove_media.setEnabled(False)
         self._btn_remove_media.clicked.connect(self._remove_media)
         layout.addWidget(self._btn_remove_media)
 
-<<<<<<< HEAD
         self._media_files = []
 
         return panel
 
     # ── Panel central ─────────────────────────────────────────────────
-=======
-        # Lista interna de rutas
-        self._media_files = []   # lista de rutas absolutas
-
-        return panel
-
-    # ── Panel central (video + controles) ─────────────────────────────
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
 
     def _build_center_panel(self):
         panel = QWidget()
@@ -254,10 +183,6 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-<<<<<<< HEAD
-=======
-        # Área de video
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         video_container = QWidget()
         video_container.setObjectName("video_container")
         vc_layout = QVBoxLayout(video_container)
@@ -270,22 +195,17 @@ class MainWindow(QMainWindow):
         self._video_widget.setStyleSheet("background-color: #000000;")
 
         self._overlay_label = QLabel(
-            "Arrastra un video aquí  o  haz clic en  ＋ Cargar Video",
+            "🎬\nArrastra un video aquí  o  haz clic en  ＋ Cargar\n\nPrueba con streamers: Twitch, YouTube, etc.",
             self._video_widget
         )
         self._overlay_label.setObjectName("overlay_text")
         self._overlay_label.setAlignment(Qt.AlignCenter)
         self._overlay_label.setStyleSheet(
-            "color:#333333; font-size:14px; font-weight:500; background:transparent;"
+            "color:#666666; font-size:16px; font-weight:600; background:transparent; line-height:1.8;"
         )
 
         vc_layout.addWidget(self._video_widget)
         layout.addWidget(video_container, stretch=1)
-<<<<<<< HEAD
-=======
-
-        # Controles de reproducción
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         layout.addWidget(self._build_playback_controls())
 
         return panel
@@ -333,11 +253,7 @@ class MainWindow(QMainWindow):
 
         return bar
 
-<<<<<<< HEAD
     # ── Panel derecho ─────────────────────────────────────────────────
-=======
-    # ── Panel derecho (lista de clips) ────────────────────────────────
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
 
     def _build_right_panel(self):
         panel = QWidget()
@@ -363,23 +279,15 @@ class MainWindow(QMainWindow):
         self._btn_delete.clicked.connect(self._delete_clip)
         layout.addWidget(self._btn_delete)
 
-<<<<<<< HEAD
         sep2 = QFrame(); sep2.setFrameShape(QFrame.HLine)
         sep2.setStyleSheet("color: #222222;")
         layout.addWidget(sep2)
-=======
-        # ── Panel de highlights ──
-        sep = QFrame(); sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet("color: #222222;")
-        layout.addWidget(sep)
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
 
         self._highlights_panel = HighlightsPanel()
         self._highlights_panel.highlight_seek.connect(self._on_highlight_seek)
         self._highlights_panel.highlight_add.connect(self._on_highlight_add)
         layout.addWidget(self._highlights_panel, stretch=1)
 
-<<<<<<< HEAD
         # Panel de historial
         sep3 = QFrame(); sep3.setFrameShape(QFrame.HLine)
         sep3.setStyleSheet("color: #222222;")
@@ -389,8 +297,6 @@ class MainWindow(QMainWindow):
         if self._history_panel:
             layout.addWidget(self._history_panel, stretch=1)
 
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         return panel
 
     # ── Timeline inferior ─────────────────────────────────────────────
@@ -402,20 +308,12 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-<<<<<<< HEAD
-=======
-        # ── Barra de herramientas del timeline ──
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         toolbar = QWidget()
         toolbar.setObjectName("timeline_toolbar")
         tb_layout = QHBoxLayout(toolbar)
         tb_layout.setContentsMargins(12, 0, 12, 0)
         tb_layout.setSpacing(8)
 
-<<<<<<< HEAD
-=======
-        # Botones IN / OUT
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._btn_in = QPushButton("[ ENTRADA")
         self._btn_in.setObjectName("btn_set_in")
         self._btn_in.setToolTip("Marcar inicio del clip (I)")
@@ -428,39 +326,23 @@ class MainWindow(QMainWindow):
         self._btn_out.clicked.connect(self._set_out)
         tb_layout.addWidget(self._btn_out)
 
-<<<<<<< HEAD
-=======
-        # Display IN / OUT
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._in_out_lbl = QLabel("IN: —   OUT: —   Dur: —")
         self._in_out_lbl.setObjectName("in_out_display")
         tb_layout.addWidget(self._in_out_lbl)
 
         tb_layout.addStretch()
 
-<<<<<<< HEAD
-=======
-        # Nombre del clip
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._clip_name_edit = QLineEdit()
         self._clip_name_edit.setPlaceholderText("Nombre del clip (opcional)")
         self._clip_name_edit.setFixedWidth(180)
         tb_layout.addWidget(self._clip_name_edit)
 
-<<<<<<< HEAD
-=======
-        # Formato
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._combo_format = QComboBox()
         self._combo_format.setFixedWidth(180)
         for k in EXPORT_PRESETS.keys():
             self._combo_format.addItem(k)
         tb_layout.addWidget(self._combo_format)
 
-<<<<<<< HEAD
-=======
-        # Botón crear clip
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._btn_create = QPushButton("＋ Crear Clip")
         self._btn_create.setObjectName("btn_create_clip")
         self._btn_create.setEnabled(False)
@@ -469,25 +351,13 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(toolbar)
 
-<<<<<<< HEAD
-=======
-        # ── Waveform / slider ──
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._waveform = WaveformWidget()
         self._waveform.seek_requested.connect(self._on_waveform_seek)
         layout.addWidget(self._waveform, stretch=1)
 
-<<<<<<< HEAD
         self._subs_options = SubtitlesOptions()
         layout.addWidget(self._subs_options)
 
-=======
-        # ── Opciones de subtítulos ──
-        self._subs_options = SubtitlesOptions()
-        layout.addWidget(self._subs_options)
-
-        # ── Slider del timeline ──
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         slider_row = QWidget()
         slider_row.setStyleSheet("background:#0d0d0d;")
         slider_layout = QHBoxLayout(slider_row)
@@ -503,10 +373,6 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(slider_row)
 
-<<<<<<< HEAD
-=======
-        # ── Barra de progreso de exportación ──
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._progress = QProgressBar()
         self._progress.setVisible(False)
         self._progress.setTextVisible(False)
@@ -529,11 +395,7 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("O"),      self, self._set_out)
 
     # ══════════════════════════════════════════════════════════════════
-<<<<<<< HEAD
     # RESIZE
-=======
-    # RESIZE — reposicionar overlay
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
     # ══════════════════════════════════════════════════════════════════
 
     def resizeEvent(self, event):
@@ -565,10 +427,6 @@ class MainWindow(QMainWindow):
 
         self._btn_remove_media.setEnabled(True)
 
-<<<<<<< HEAD
-=======
-        # Si no hay video activo, abrir el primero
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         if not self._source_path:
             self._media_list.setCurrentRow(0)
             self._open_media(self._media_files[0])
@@ -589,10 +447,6 @@ class MainWindow(QMainWindow):
         self._media_list.takeItem(row)
         self._media_files.pop(row)
 
-<<<<<<< HEAD
-=======
-        # Si era el video activo, detener reproducción
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         if file == self._source_path:
             self._player.stop()
             self._source_path = ""
@@ -604,10 +458,7 @@ class MainWindow(QMainWindow):
             self._timecode_lbl.setText("00:00:00 / 00:00:00")
             self.setWindowTitle("StreamerClipsAI")
             self._btn_export_top.setEnabled(False)
-<<<<<<< HEAD
             self._highlights_panel.set_ready(False)
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
             self._status.showMessage("Video eliminado de la lista")
 
         self._btn_remove_media.setEnabled(len(self._media_files) > 0)
@@ -649,7 +500,6 @@ class MainWindow(QMainWindow):
         self._is_playing = True
         self._btn_play.setText("⏸")
 
-<<<<<<< HEAD
         # ── Conectar detector de highlights ──
         # Detener detector anterior si estaba corriendo
         if self._detector and self._detector.isRunning():
@@ -666,8 +516,6 @@ class MainWindow(QMainWindow):
             self._highlights_panel.set_ready(False)
             self._status.showMessage("⚠ FFmpeg no encontrado — la detección de highlights no estará disponible")
 
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
     # ══════════════════════════════════════════════════════════════════
     # REPRODUCCIÓN
     # ══════════════════════════════════════════════════════════════════
@@ -820,10 +668,6 @@ class MainWindow(QMainWindow):
         self._progress.setVisible(True)
         self._progress.setValue(0)
 
-<<<<<<< HEAD
-=======
-        # ¿Exportar con subtítulos automáticos?
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         if self._subs_options.enabled:
             self._status.showMessage("Exportando + transcribiendo + quemando subtítulos…")
             self._export_worker = ExportWithSubtitlesWorker(
@@ -860,7 +704,6 @@ class MainWindow(QMainWindow):
         self._progress.setValue(100)
         self._btn_export_top.setEnabled(True)
         self._status.showMessage(f"✓ Exportado: {os.path.basename(path)}", 8000)
-<<<<<<< HEAD
         # Guardar en historial si hay usuario
         if self.auth and self.auth.is_logged_in:
             fps = self._fps or 30
@@ -875,8 +718,6 @@ class MainWindow(QMainWindow):
             )
             if self._history_panel:
                 self._history_panel.refresh()
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
 
     def _on_export_error(self, msg: str):
         self._progress.setVisible(False)
@@ -927,12 +768,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(object)
     def _on_highlight_add(self, highlight):
-<<<<<<< HEAD
         """Agregar un highlight individual como clip (botón ＋ en cada tarjeta)."""
-=======
-        """Agregar highlight como clip a la lista."""
-        from core.clip_model import Clip
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         fps = self._fps or 30
         clip = Clip(
             source_path  = self._source_path,
@@ -950,7 +786,6 @@ class MainWindow(QMainWindow):
         self._btn_delete.setEnabled(True)
         self._status.showMessage(f"✓ Highlight agregado: {clip.display_name()}")
 
-<<<<<<< HEAD
     @pyqtSlot(list)
     def _on_all_highlights_found(self, highlights: list):
         """Cuando termina el análisis, agrega TODOS los highlights a MIS CLIPS automáticamente."""
@@ -987,36 +822,28 @@ class MainWindow(QMainWindow):
 
     def on_user_logged_in(self, user):
         """Llamado desde main.py cuando el usuario inicia sesión."""
-        self._user_label.setText(f"👤  {user.username}")
-        self._btn_logout.show()
+        self._profile_widget.set_user(user)
         if self._history_panel:
             self._history_panel.refresh()
 
     def _do_logout(self):
         if self.auth:
             self.auth.logout()
-        # Volver a la pantalla de login
+        self._profile_widget.hide()
         parent = self.parent()
         if parent and hasattr(parent, 'setCurrentIndex'):
             parent.resize(420, 580)
             parent.setMinimumSize(400, 500)
             parent.setCurrentIndex(0)
             parent.setWindowTitle("StreamerClipsAI")
-        self._user_label.setText("")
-        self._btn_logout.hide()
 
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
     # ══════════════════════════════════════════════════════════════════
     # CIERRE
     # ══════════════════════════════════════════════════════════════════
 
     def closeEvent(self, event):
-<<<<<<< HEAD
         if self._detector and self._detector.isRunning():
             self._detector.quit()
             self._detector.wait()
-=======
->>>>>>> 9bf68840d0de988248ce22cb69745602db02aae6
         self._player.cleanup()
         event.accept()
