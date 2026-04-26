@@ -13,7 +13,8 @@ from typing import Optional, List, Dict
 from dataclasses import dataclass
 
 
-DB_PATH = os.path.join(os.path.expanduser("~"), ".streamerclipsai", "users.db")
+DB_PATH      = os.path.join(os.path.expanduser("~"), ".streamerclipsai", "users.db")
+SESSION_PATH = os.path.join(os.path.expanduser("~"), ".streamerclipsai", "session.json")
 
 
 @dataclass
@@ -42,6 +43,45 @@ class AuthManager:
     def __init__(self):
         self._current_user: Optional[User] = None
         self._ensure_db()
+        self._restore_session()
+
+    # ------------------------------------------------------------------
+    # Sesión persistente
+    # ------------------------------------------------------------------
+
+    def _save_session(self, user_id: int):
+        token = secrets.token_hex(32)
+        data = {"user_id": user_id, "token": token}
+        os.makedirs(os.path.dirname(SESSION_PATH), exist_ok=True)
+        with open(SESSION_PATH, "w") as f:
+            json.dump(data, f)
+
+    def _clear_session(self):
+        if os.path.exists(SESSION_PATH):
+            os.remove(SESSION_PATH)
+
+    def _restore_session(self):
+        if not os.path.exists(SESSION_PATH):
+            return
+        try:
+            with open(SESSION_PATH, "r") as f:
+                data = json.load(f)
+            user_id = data.get("user_id")
+            if not user_id:
+                return
+            conn = self._connect()
+            row = conn.execute(
+                "SELECT id, username, email, created_at FROM users WHERE id=?",
+                (user_id,)
+            ).fetchone()
+            conn.close()
+            if row:
+                self._current_user = User(
+                    id=row[0], username=row[1],
+                    email=row[2], created_at=row[3]
+                )
+        except Exception:
+            self._clear_session()
 
     # ------------------------------------------------------------------
     # Base de datos
@@ -165,6 +205,7 @@ class AuthManager:
             email=user_email,
             created_at=created_at
         )
+        self._save_session(user_id)
         return True, f"¡Bienvenido, {username}!"
 
     # ------------------------------------------------------------------
@@ -173,6 +214,7 @@ class AuthManager:
 
     def logout(self):
         self._current_user = None
+        self._clear_session()
 
     @property
     def is_logged_in(self) -> bool:

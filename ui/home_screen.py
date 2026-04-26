@@ -267,7 +267,23 @@ class HomeScreen(QWidget):
         self._profile_widget.logout_requested.connect(self.logout_requested)
         layout.addWidget(self._profile_widget)
 
+        btn_about = QPushButton("ℹ")
+        btn_about.setToolTip("Acerca de StreamerClipsAI")
+        btn_about.setFixedSize(32, 32)
+        btn_about.setStyleSheet("""
+            QPushButton { background:transparent; color:#444444; border:none;
+                font-size:16px; border-radius:4px; }
+            QPushButton:hover { color:#ffffff; background:#1e1e1e; }
+        """)
+        btn_about.clicked.connect(self._show_about)
+        layout.addWidget(btn_about)
+
         return bar
+
+    def _show_about(self):
+        from ui.about_dialog import AboutDialog
+        dlg = AboutDialog(self)
+        dlg.exec_()
 
     def _build_create_section(self):
         section = QWidget()

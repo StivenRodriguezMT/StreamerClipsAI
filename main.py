@@ -45,6 +45,11 @@ if __name__ == "__main__":
         stack.setMinimumSize(800, 600)
         stack.setCurrentIndex(1)
         stack.setWindowTitle(f"StreamerClipsAI  ·  {user.username}")
+        stack.showMaximized()
+        # Mostrar about automáticamente
+        from ui.about_dialog import AboutDialog
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(500, lambda: AboutDialog(stack).exec_())
 
     def on_open_editor():
         main_win.on_user_logged_in(auth.current_user)
@@ -72,4 +77,9 @@ if __name__ == "__main__":
     main_win._profile_widget.logout_requested.connect(on_logout_from_editor)
 
     stack.show()
+
+    # Si hay sesión guardada, saltar el login directo al home
+    if auth.is_logged_in:
+        on_login(auth.current_user)
+
     sys.exit(app.exec_())
